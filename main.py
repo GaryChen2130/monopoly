@@ -1,4 +1,5 @@
 import sys
+import random
 import pygame
 from pygame.locals import *
 from ui import *
@@ -19,12 +20,13 @@ BOXHEIGHT = 150
 pygame.init()
 window = pygame.display.set_mode((WINDOWWIDTH,WINDOWHEIGHT))
 pygame.display.set_caption(GAMETITLE)
-window.fill((0,0,0))
 font_obj = pygame.font.Font('GenYoGothicTW-Regular.ttf', 20)
 
 # UI Setting
 BTNWIDTH = 150
 BTNHEIGHT = 150
+ARROWWIDTH = 50
+ARROWHEIGHT = 125
 
 # Define Color
 WHITE = (255,255,255)
@@ -32,47 +34,63 @@ BLACK = (0,0,0)
 
 # Game Images
 IMAGES = {
-	'start' : pygame.image.load('images/start.jpg'),
-	'arrest' : pygame.image.load('images/arrest.jpg'),
-	'jail' : pygame.image.load('images/jail.jpg'),
-	'parking' : pygame.image.load('images/parking.jpg'),
-	'confucius_temple' : pygame.image.load('images/confucius_temple.jpg'),
-	'tainan_art_museum' : pygame.image.load('images/tainan_art_museum.jpg'),
-	'chihkan_tower' : pygame.image.load('images/chihkan_tower.jpg'),
-	'anping_castle' : pygame.image.load('images/anping_castle.jpg')
+	'start' : pygame.transform.scale(pygame.image.load('images/start.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'arrest' : pygame.transform.scale(pygame.image.load('images/arrest.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'jail' : pygame.transform.scale(pygame.image.load('images/jail.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'parking' : pygame.transform.scale(pygame.image.load('images/parking.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'confucius_temple' : pygame.transform.scale(pygame.image.load('images/confucius_temple.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'tainan_art_museum' : pygame.transform.scale(pygame.image.load('images/tainan_art_museum.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'chihkan_tower' : pygame.transform.scale(pygame.image.load('images/chihkan_tower.jpg'),(BOXWIDTH,BOXHEIGHT)),
+	'anping_castle' : pygame.transform.scale(pygame.image.load('images/anping_castle.jpg'),(BOXWIDTH,BOXHEIGHT))
 }
 
 UI_IMAGES = {
-	'go_btn_up' : pygame.image.load('images/go_btn_up.jpg').convert_alpha(),
-	'go_btn_down' : pygame.image.load('images/go_btn_down.jpg').convert_alpha()
+	'go_btn_down' : pygame.transform.scale(pygame.image.load('images/go_btn_down.jpg'),(BTNWIDTH,BTNHEIGHT)),
+	'go_btn_up' : pygame.transform.scale(pygame.image.load('images/go_btn_up.jpg'),(BTNWIDTH,BTNHEIGHT)),
+	'arrow_up1' : pygame.transform.scale(pygame.image.load('images/arrow_up1.jpg'),(ARROWWIDTH,ARROWHEIGHT)),
+	'arrow_down1' : pygame.transform.scale(pygame.image.load('images/arrow_down1.jpg'),(ARROWWIDTH,ARROWHEIGHT)),
+	'arrow_left1' : pygame.transform.scale(pygame.image.load('images/arrow_left1.jpg'),(ARROWHEIGHT,ARROWWIDTH)),
+	'arrow_right1' : pygame.transform.scale(pygame.image.load('images/arrow_right1.jpg'),(ARROWHEIGHT,ARROWWIDTH)),
+	'arrow_up2' : pygame.transform.scale(pygame.image.load('images/arrow_up2.jpg'),(ARROWWIDTH,ARROWHEIGHT)),
+	'arrow_down2' : pygame.transform.scale(pygame.image.load('images/arrow_down2.jpg'),(ARROWWIDTH,ARROWHEIGHT)),
+	'arrow_left2' : pygame.transform.scale(pygame.image.load('images/arrow_left2.jpg'),(ARROWHEIGHT,ARROWWIDTH)),
+	'arrow_right2' : pygame.transform.scale(pygame.image.load('images/arrow_right2.jpg'),(ARROWHEIGHT,ARROWWIDTH))
 }
 
 
 def main():
-	game_map = SetGameMap(HBOXNUM,VBOXNUM) # Setup game map
+	map_surface, map_pos, game_map, arrow_pos, arrow_dir = SetGameMap(HBOXNUM,VBOXNUM) # Setup game map
+	BOXNUM = len(game_map)
 	
 	##################################################################################################################################################################################
 	# Fill content into game map
 	##################################################################################################################################################################################
 
-	SetMapContent(pygame.transform.scale(IMAGES['start'],(BOXWIDTH,BOXHEIGHT)),game_map[0])
-	SetMapContent(pygame.transform.scale(IMAGES['confucius_temple'],(BOXWIDTH,BOXHEIGHT)),game_map[1])
-	SetMapContent(pygame.transform.scale(IMAGES['jail'],(BOXWIDTH,BOXHEIGHT)),game_map[2])
-	SetMapContent(pygame.transform.scale(IMAGES['tainan_art_museum'],(BOXWIDTH,BOXHEIGHT)),game_map[3])
-	SetMapContent(pygame.transform.scale(IMAGES['parking'],(BOXWIDTH,BOXHEIGHT)),game_map[4])
-	SetMapContent(pygame.transform.scale(IMAGES['chihkan_tower'],(BOXWIDTH,BOXHEIGHT)),game_map[5])
-	SetMapContent(pygame.transform.scale(IMAGES['arrest'],(BOXWIDTH,BOXHEIGHT)),game_map[6])
-	SetMapContent(pygame.transform.scale(IMAGES['anping_castle'],(BOXWIDTH,BOXHEIGHT)),game_map[7])
+	SetMapContent(map_surface,IMAGES['start'],game_map[0])
+	SetMapContent(map_surface,IMAGES['confucius_temple'],game_map[1])
+	SetMapContent(map_surface,IMAGES['jail'],game_map[2])
+	SetMapContent(map_surface,IMAGES['tainan_art_museum'],game_map[3])
+	SetMapContent(map_surface,IMAGES['parking'],game_map[4])
+	SetMapContent(map_surface,IMAGES['chihkan_tower'],game_map[5])
+	SetMapContent(map_surface,IMAGES['arrest'],game_map[6])
+	SetMapContent(map_surface,IMAGES['anping_castle'],game_map[7])
 
 	##################################################################################################################################################################################
 
 	##################################################################################################################################################################################
-	# Setup Game GUI
+	# Setup Game UI
 	##################################################################################################################################################################################
 
 	ui_list = []
-	go_btn = Button(pygame.transform.scale(UI_IMAGES['go_btn_up'],(BTNWIDTH,BTNHEIGHT)),pygame.transform.scale(UI_IMAGES['go_btn_down'],(BTNWIDTH,BTNHEIGHT)),(1350,700))
+	go_btn = Button(UI_IMAGES['go_btn_up'],UI_IMAGES['go_btn_down'],(1350,700))
 	ui_list.append(go_btn)
+
+	players = []
+	player1 = Player(1,UI_IMAGES['arrow_left1'],UI_IMAGES['arrow_right1'],UI_IMAGES['arrow_up1'],UI_IMAGES['arrow_down1'])
+	players.append(player1)
+	player2 = Player(2,UI_IMAGES['arrow_left2'],UI_IMAGES['arrow_right2'],UI_IMAGES['arrow_up2'],UI_IMAGES['arrow_down2'])
+	players.append(player2)
+	player_turn = 1
 
 	##################################################################################################################################################################################
 
@@ -81,12 +99,18 @@ def main():
 	##################################################################################################################################################################################
 
 	while True:
-		DrawGUI(ui_list)
+		window.fill((0,0,0))
+		window.blit(map_surface,(map_pos[0],map_pos[1])) # Draw game map
+		DrawGUI(ui_list) # Draw GUI
+		DrawPlayer(players,arrow_pos,arrow_dir)
 
 		for event in pygame.event.get():
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if go_btn.isHover():
-					print('button down')
+					step = random.randint(1,6)
+					players[player_turn - 1].Move(step,BOXNUM)
+					player_turn += 1
+					if player_turn == len(players): player_turn = 0
 			elif event.type == QUIT:
 				terminate()
 
@@ -97,58 +121,90 @@ def main():
 
 
 def SetGameMap(h_box,v_box):
-	start_left = WINDOWWIDTH/2 + (h_box/2 - 1)*BOXWIDTH
-	start_height = WINDOWHEIGHT/2 + (v_box/2 - 1)*BOXHEIGHT
-	end_left = WINDOWWIDTH/2 - (h_box/2)*BOXWIDTH
-	end_height = WINDOWHEIGHT/2 - (v_box/2)*BOXHEIGHT
+	map_left = WINDOWWIDTH/2 - (h_box/2)*BOXWIDTH
+	map_right = WINDOWWIDTH/2 + (h_box/2)*BOXWIDTH
+	map_top = WINDOWHEIGHT/2 - (v_box/2)*BOXHEIGHT
+	map_bottom = WINDOWHEIGHT/2 + (v_box/2)*BOXHEIGHT
+
+	map_width = map_right - map_left
+	map_height = map_bottom - map_top
+	map_surface = pygame.Surface((map_width,map_height), pygame.SRCALPHA)
+
+	start_left = map_width - BOXWIDTH
+	start_height = map_height - BOXHEIGHT
+	end_left = 0
+	end_height = 0
 	game_map = [None]*(h_box*2 + (v_box - 2)*2)
+	arrow_pos = [None]*(h_box*2 + (v_box - 2)*2)
+	arrow_dir = [None]*(h_box*2 + (v_box - 2)*2)
 
 	# Draw horizontal boxes on map
 	for i in range(h_box):
-		pygame.draw.rect(window,WHITE,[start_left - i*BOXWIDTH,start_height,BOXWIDTH,BOXHEIGHT],3)
+		rect_left = start_left - i*BOXWIDTH
+		rect_top = start_height
+		pygame.draw.rect(map_surface,WHITE,[rect_left,rect_top,BOXWIDTH,BOXHEIGHT],3)
 		text = font_obj.render(str(i),True,WHITE,(0,0,0,0))
 		text_rect = text.get_rect()
-		text_rect.center = (start_left - i*BOXWIDTH + BOXWIDTH/2,start_height + BOXHEIGHT/2)
-		window.blit(text,text_rect)
-		game_map[i] = [start_left - i*BOXWIDTH,start_height]
+		text_rect.center = (rect_left + BOXWIDTH/2,rect_top + BOXHEIGHT/2)
+		map_surface.blit(text,text_rect)
+		game_map[i] = [rect_left, rect_top]
+		arrow_pos[i] = [rect_left + map_left, rect_top + map_top + BOXHEIGHT]
+		arrow_dir[i] = '_down'
 
-		pygame.draw.rect(window,WHITE,[end_left + i*BOXWIDTH,end_height,BOXWIDTH,BOXHEIGHT],3)
+		rect_left = end_left + i*BOXWIDTH
+		rect_top = end_height
+		pygame.draw.rect(map_surface,WHITE,[rect_left,rect_top,BOXWIDTH,BOXHEIGHT],3)
 		text = font_obj.render(str(i + h_box + v_box - 2),True,WHITE,(0,0,0,0))
 		text_rect = text.get_rect()
-		text_rect.center = (end_left + i*BOXWIDTH + BOXWIDTH/2,end_height + BOXHEIGHT/2)
-		window.blit(text,text_rect)
-		game_map[i + h_box + v_box - 2] = [end_left + i*BOXWIDTH,end_height]
+		text_rect.center = (rect_left + BOXWIDTH/2,rect_top + BOXHEIGHT/2)
+		map_surface.blit(text,text_rect)
+		game_map[i + h_box + v_box - 2] = [rect_left,rect_top]
+		arrow_pos[i + h_box + v_box - 2] = [rect_left + map_left, rect_top + map_top - ARROWHEIGHT]
+		arrow_dir[i + h_box + v_box - 2] = '_up'
 
 	# Draw vertical boxes on map
 	for i in range(1,v_box - 1):
-		pygame.draw.rect(window,WHITE,[start_left,start_height - i*BOXHEIGHT,BOXWIDTH,BOXHEIGHT],3)
+		rect_left = start_left
+		rect_top = start_height - i*BOXHEIGHT
+		pygame.draw.rect(map_surface,WHITE,[rect_left,rect_top,BOXWIDTH,BOXHEIGHT],3)
 		text = font_obj.render(str(h_box*2 + (v_box - 2)*2 - i),True,WHITE,(0,0,0,0))
 		text_rect = text.get_rect()
-		text_rect.center = (start_left + BOXWIDTH/2,start_height - i*BOXHEIGHT + BOXHEIGHT/2)
-		window.blit(text,text_rect)
-		game_map[h_box*2 + (v_box - 2)*2 - i] = [start_left,start_height - i*BOXHEIGHT]
+		text_rect.center = (rect_left + BOXWIDTH/2,rect_top + BOXHEIGHT/2)
+		map_surface.blit(text,text_rect)
+		game_map[h_box*2 + (v_box - 2)*2 - i] = [rect_left,rect_top]
+		arrow_pos[h_box*2 + (v_box - 2)*2 - i] = [rect_left + map_left + BOXWIDTH, rect_top + map_top]
+		arrow_dir[h_box*2 + (v_box - 2)*2 - i] = '_right'
 
-		pygame.draw.rect(window,WHITE,[end_left,start_height - i*BOXHEIGHT,BOXWIDTH,BOXHEIGHT],3)
+		rect_left = end_left
+		rect_top = start_height - i*BOXHEIGHT
+		pygame.draw.rect(map_surface,WHITE,[rect_left,rect_top,BOXWIDTH,BOXHEIGHT],3)
 		text = font_obj.render(str(h_box + i - 1),True,WHITE,(0,0,0,0))
 		text_rect = text.get_rect()
-		text_rect.center = (end_left + BOXWIDTH/2,start_height - i*BOXHEIGHT + BOXHEIGHT/2)
-		window.blit(text,text_rect)
-		game_map[h_box + i - 1] = [end_left,start_height - i*BOXHEIGHT]
+		text_rect.center = (rect_left + BOXWIDTH/2,rect_top + BOXHEIGHT/2)
+		map_surface.blit(text,text_rect)
+		game_map[h_box + i - 1] = [rect_left,rect_top]
+		arrow_pos[h_box + i - 1] = [rect_left + map_left - ARROWHEIGHT, rect_top + map_top]
+		arrow_dir[h_box + i - 1] = '_left'
 
-	return game_map
+	return map_surface, (map_left, map_top, map_width, map_height), game_map, arrow_pos, arrow_dir
 
 
-def SetMapContent(image,pos):
+def SetMapContent(map_surface,image,pos):
 	rect = image.get_rect()
 	rect.left = pos[0]
 	rect.top = pos[1]
-	window.blit(image,rect)
+	map_surface.blit(image,rect)
 	return
 
 
 def DrawGUI(ui_list):
 	for ui in ui_list:
 		ui.render(window)
+	return
+
+def DrawPlayer(player_list,arrow_pos,arrow_dir):
+	for player in player_list:
+		player.render(window,UI_IMAGES['arrow' + arrow_dir[player.pos] + str(player.player_num)],arrow_pos[player.pos])
 	return
 
 

@@ -20,3 +20,27 @@ class Button:
 		else:
 			window.blit(self.image_up,self.pos)
 		return
+
+
+class Player:
+	def __init__(self,num,arrow_left,arrow_right,arrow_up,arrow_down):
+		self.player_num = num
+		self.image_left = arrow_left
+		self.image_right = arrow_right
+		self.image_up = arrow_up
+		self.image_down = arrow_down
+		self.asset = []
+		self.money = 15000
+		self.pos = 0
+
+	def render(self,window,image,pos):
+		window.blit(image,pos)
+		return
+
+	def Move(self,step,limit):
+		self.pos += step
+		print('pos:' + str(self.pos))
+		while self.pos >= limit:
+			self.pos -= limit
+		return
+
