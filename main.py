@@ -22,11 +22,13 @@ window = pygame.display.set_mode((WINDOWWIDTH,WINDOWHEIGHT))
 pygame.display.set_caption(GAMETITLE)
 font_obj = pygame.font.Font('GenYoGothicTW-Regular.ttf', 20)
 
-# UI Setting
+# UI Size
 BTNWIDTH = 150
 BTNHEIGHT = 150
 ARROWWIDTH = 50
 ARROWHEIGHT = 125
+DICEWIDTH = 100
+DICEHEIGHT = 100
 
 # Define Color
 WHITE = (255,255,255)
@@ -54,7 +56,13 @@ UI_IMAGES = {
 	'arrow_up2' : pygame.transform.scale(pygame.image.load('images/arrow_up2.jpg'),(ARROWWIDTH,ARROWHEIGHT)),
 	'arrow_down2' : pygame.transform.scale(pygame.image.load('images/arrow_down2.jpg'),(ARROWWIDTH,ARROWHEIGHT)),
 	'arrow_left2' : pygame.transform.scale(pygame.image.load('images/arrow_left2.jpg'),(ARROWHEIGHT,ARROWWIDTH)),
-	'arrow_right2' : pygame.transform.scale(pygame.image.load('images/arrow_right2.jpg'),(ARROWHEIGHT,ARROWWIDTH))
+	'arrow_right2' : pygame.transform.scale(pygame.image.load('images/arrow_right2.jpg'),(ARROWHEIGHT,ARROWWIDTH)),
+	'dice1' : pygame.transform.scale(pygame.image.load('images/dice1.jpeg'),(DICEWIDTH,DICEHEIGHT)),
+	'dice2' : pygame.transform.scale(pygame.image.load('images/dice2.jpeg'),(DICEWIDTH,DICEHEIGHT)),
+	'dice3' : pygame.transform.scale(pygame.image.load('images/dice3.jpeg'),(DICEWIDTH,DICEHEIGHT)),
+	'dice4' : pygame.transform.scale(pygame.image.load('images/dice4.jpeg'),(DICEWIDTH,DICEHEIGHT)),
+	'dice5' : pygame.transform.scale(pygame.image.load('images/dice5.jpeg'),(DICEWIDTH,DICEHEIGHT)),
+	'dice6' : pygame.transform.scale(pygame.image.load('images/dice6.jpeg'),(DICEWIDTH,DICEHEIGHT))
 }
 
 FUNCTION = {
@@ -103,6 +111,7 @@ def main():
 	ui_list = []
 	go_btn = Button(UI_IMAGES['go_btn_up'],UI_IMAGES['go_btn_down'],(1350,700))
 	ui_list.append(go_btn)
+	step = 1 # Initial dice point
 
 	players = []
 	players.append(Player(1))
@@ -122,6 +131,7 @@ def main():
 
 	while True:
 		window.fill((0,0,0))
+		window.blit(UI_IMAGES['dice' + str(step)],(1200,725))
 		window.blit(map_surface,(map_pos[0],map_pos[1])) # Draw game map
 		DrawGUI(ui_list) # Draw GUI
 		DrawPlayer(players,arrow_pos,arrow_dir,offset)
@@ -130,6 +140,7 @@ def main():
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if go_btn.isHover():
 					step = random.randint(1,6)
+					
 					players[player_turn - 1].Move(step,BOXNUM)
 					player_turn += 1
 					if player_turn == len(players): player_turn = 0
