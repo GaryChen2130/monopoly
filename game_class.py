@@ -23,12 +23,8 @@ class Button:
 
 
 class Player:
-	def __init__(self,num,arrow_left,arrow_right,arrow_up,arrow_down):
+	def __init__(self,num):
 		self.player_num = num
-		self.image_left = arrow_left
-		self.image_right = arrow_right
-		self.image_up = arrow_up
-		self.image_down = arrow_down
 		self.asset = []
 		self.money = 15000
 		self.pos = 0
@@ -39,8 +35,18 @@ class Player:
 
 	def Move(self,step,limit):
 		self.pos += step
-		print('pos:' + str(self.pos))
 		while self.pos >= limit:
 			self.pos -= limit
+		return
+
+
+class Location:
+	def __init__(self,image,pos,func):
+		self.image = image
+		self.pos = pos
+		self.func = func
+
+	def render(self,surface):
+		surface.blit(self.image,self.pos)
 		return
 

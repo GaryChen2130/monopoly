@@ -2,7 +2,7 @@ import sys
 import random
 import pygame
 from pygame.locals import *
-from ui import *
+from game_class import *
 
 FPS = 60 # frame rate for updating game window
 GAMECLOCK = pygame.time.Clock()
@@ -57,6 +57,21 @@ UI_IMAGES = {
 	'arrow_right2' : pygame.transform.scale(pygame.image.load('images/arrow_right2.jpg'),(ARROWHEIGHT,ARROWWIDTH))
 }
 
+FUNCTION = {
+	'start' : 0,
+	'arrest' : 1,
+	'jail' : 2,
+	'parking' : 3,
+	'estate' : 4
+}
+
+DIRECT = {
+	'_left' : 0,
+	'_right' : 1,
+	'_up' : 2,
+	'_down' : 3
+}
+
 
 def main():
 	map_surface, map_pos, game_map, arrow_pos, arrow_dir = SetGameMap(HBOXNUM,VBOXNUM) # Setup game map
@@ -66,14 +81,18 @@ def main():
 	# Fill content into game map
 	##################################################################################################################################################################################
 
-	SetMapContent(map_surface,IMAGES['start'],game_map[0])
-	SetMapContent(map_surface,IMAGES['confucius_temple'],game_map[1])
-	SetMapContent(map_surface,IMAGES['jail'],game_map[2])
-	SetMapContent(map_surface,IMAGES['tainan_art_museum'],game_map[3])
-	SetMapContent(map_surface,IMAGES['parking'],game_map[4])
-	SetMapContent(map_surface,IMAGES['chihkan_tower'],game_map[5])
-	SetMapContent(map_surface,IMAGES['arrest'],game_map[6])
-	SetMapContent(map_surface,IMAGES['anping_castle'],game_map[7])
+	location_list = []
+	location_list.append(Location(IMAGES['start'],game_map[0],FUNCTION['start']))
+	location_list.append(Location(IMAGES['confucius_temple'],game_map[1],FUNCTION['estate']))
+	location_list.append(Location(IMAGES['jail'],game_map[2],FUNCTION['jail']))
+	location_list.append(Location(IMAGES['tainan_art_museum'],game_map[3],FUNCTION['estate']))
+	location_list.append(Location(IMAGES['parking'],game_map[4],FUNCTION['parking']))
+	location_list.append(Location(IMAGES['chihkan_tower'],game_map[5],FUNCTION['estate']))
+	location_list.append(Location(IMAGES['arrest'],game_map[6],FUNCTION['arrest']))
+	location_list.append(Location(IMAGES['anping_castle'],game_map[7],FUNCTION['estate']))
+
+	for location in location_list:
+		location.render(map_surface)
 
 	##################################################################################################################################################################################
 
@@ -86,11 +105,14 @@ def main():
 	ui_list.append(go_btn)
 
 	players = []
-	player1 = Player(1,UI_IMAGES['arrow_left1'],UI_IMAGES['arrow_right1'],UI_IMAGES['arrow_up1'],UI_IMAGES['arrow_down1'])
-	players.append(player1)
-	player2 = Player(2,UI_IMAGES['arrow_left2'],UI_IMAGES['arrow_right2'],UI_IMAGES['arrow_up2'],UI_IMAGES['arrow_down2'])
-	players.append(player2)
+	players.append(Player(1))
+	players.append(Player(2))
 	player_turn = 1
+	PLAYERNUM = len(players)
+
+	offset = []
+	for i in range(PLAYERNUM):
+		offset.append([(0,(ARROWWIDTH + 10)*i),(0,(ARROWWIDTH + 10)*i),((ARROWWIDTH + 10)*i,0),((ARROWWIDTH + 10)*i,0)])
 
 	##################################################################################################################################################################################
 
@@ -102,7 +124,7 @@ def main():
 		window.fill((0,0,0))
 		window.blit(map_surface,(map_pos[0],map_pos[1])) # Draw game map
 		DrawGUI(ui_list) # Draw GUI
-		DrawPlayer(players,arrow_pos,arrow_dir)
+		DrawPlayer(players,arrow_pos,arrow_dir,offset)
 
 		for event in pygame.event.get():
 			if event.type == pygame.MOUSEBUTTONDOWN:
@@ -189,22 +211,16 @@ def SetGameMap(h_box,v_box):
 	return map_surface, (map_left, map_top, map_width, map_height), game_map, arrow_pos, arrow_dir
 
 
-def SetMapContent(map_surface,image,pos):
-	rect = image.get_rect()
-	rect.left = pos[0]
-	rect.top = pos[1]
-	map_surface.blit(image,rect)
-	return
-
-
 def DrawGUI(ui_list):
 	for ui in ui_list:
 		ui.render(window)
 	return
 
-def DrawPlayer(player_list,arrow_pos,arrow_dir):
+def DrawPlayer(player_list,arrow_pos,arrow_dir,offset):
 	for player in player_list:
-		player.render(window,UI_IMAGES['arrow' + arrow_dir[player.pos] + str(player.player_num)],arrow_pos[player.pos])
+		pos_x = arrow_pos[player.pos][0] + offset[player.player_num - 1][DIRECT[arrow_dir[player.pos]]][0]
+		pos_y = arrow_pos[player.pos][1] + offset[player.player_num - 1][DIRECT[arrow_dir[player.pos]]][1]
+		player.render(window,UI_IMAGES['arrow' + arrow_dir[player.pos] + str(player.player_num)],(pos_x,pos_y))
 	return
 
 
