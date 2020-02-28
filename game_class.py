@@ -28,6 +28,7 @@ class Player:
 		self.asset = []
 		self.money = 15000
 		self.pos = 0
+		self.freeze_turn = 0
 
 	def render(self,window,image,pos):
 		window.blit(image,pos)
@@ -36,15 +37,26 @@ class Player:
 	def Move(self,step,limit):
 		self.pos += step
 		while self.pos >= limit:
+			self.money += 3000
+			print('player' + str(self.player_num) + ' gets 3000 dollars! total money: ' + str(self.money))
 			self.pos -= limit
+		return
+
+	def Transport(self,pos):
+		self.pos = pos
 		return
 
 
 class Location:
-	def __init__(self,image,pos,func):
+	def __init__(self,image,pos,func,cost,extend_cost,tolls):
 		self.image = image
 		self.pos = pos
 		self.func = func
+		self.cost = cost
+		self.extend_cost = extend_cost
+		self.tolls = tolls
+		self.owner = -1
+		self.buildings = 0
 
 	def render(self,surface):
 		surface.blit(self.image,self.pos)

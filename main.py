@@ -21,6 +21,7 @@ pygame.init()
 window = pygame.display.set_mode((WINDOWWIDTH,WINDOWHEIGHT))
 pygame.display.set_caption(GAMETITLE)
 font_obj = pygame.font.Font('GenYoGothicTW-Regular.ttf', 20)
+JAIL_POS = 2
 
 # UI Size
 BTNWIDTH = 150
@@ -90,14 +91,14 @@ def main():
 	##################################################################################################################################################################################
 
 	location_list = []
-	location_list.append(Location(IMAGES['start'],game_map[0],FUNCTION['start']))
-	location_list.append(Location(IMAGES['confucius_temple'],game_map[1],FUNCTION['estate']))
-	location_list.append(Location(IMAGES['jail'],game_map[2],FUNCTION['jail']))
-	location_list.append(Location(IMAGES['tainan_art_museum'],game_map[3],FUNCTION['estate']))
-	location_list.append(Location(IMAGES['parking'],game_map[4],FUNCTION['parking']))
-	location_list.append(Location(IMAGES['chihkan_tower'],game_map[5],FUNCTION['estate']))
-	location_list.append(Location(IMAGES['arrest'],game_map[6],FUNCTION['arrest']))
-	location_list.append(Location(IMAGES['anping_castle'],game_map[7],FUNCTION['estate']))
+	location_list.append(Location(IMAGES['start'],game_map[0],FUNCTION['start'],-1,-1,-1))
+	location_list.append(Location(IMAGES['confucius_temple'],game_map[1],FUNCTION['estate'],1200,1000,500))
+	location_list.append(Location(IMAGES['jail'],game_map[2],FUNCTION['jail'],-1,-1,-1)) # Has to match JAIL_POS
+	location_list.append(Location(IMAGES['tainan_art_museum'],game_map[3],FUNCTION['estate'],1400,1000,600))
+	location_list.append(Location(IMAGES['parking'],game_map[4],FUNCTION['parking'],-1,-1,-1))
+	location_list.append(Location(IMAGES['chihkan_tower'],game_map[5],FUNCTION['estate'],1800,1600,800))
+	location_list.append(Location(IMAGES['arrest'],game_map[6],FUNCTION['arrest'],-1,-1,-1))
+	location_list.append(Location(IMAGES['anping_castle'],game_map[7],FUNCTION['estate'],2200,2000,1000))
 
 	for location in location_list:
 		location.render(map_surface)
@@ -137,13 +138,78 @@ def main():
 		DrawPlayer(players,arrow_pos,arrow_dir,offset)
 
 		for event in pygame.event.get():
+
 			if event.type == pygame.MOUSEBUTTONDOWN:
+			
 				if go_btn.isHover():
-					step = random.randint(1,6)
-					
-					players[player_turn - 1].Move(step,BOXNUM)
+					player_cur = players[player_turn - 1]
 					player_turn += 1
 					if player_turn == len(players): player_turn = 0
+
+					# Judge if player is in jail
+					if player_cur.freeze_turn > 0:
+						player_cur.freeze_turn -= 1
+						print('player' + str(player_cur.player_num) + ' is in jail!')
+						continue
+
+					step = random.randint(1,6)
+					player_cur.Move(step,BOXNUM)
+					
+					# Execute loaction effect
+					location = location_list[player_cur.pos]
+					#print('player position: ' + str(player_cur.pos))
+					#print('location function: ' + str(location.func))
+					if location.func == FUNCTION['arrest']:
+						# Redraw game window
+						window.fill((0,0,0))
+						window.blit(UI_IMAGES['dice' + str(step)],(1200,725))
+						window.blit(map_surface,(map_pos[0],map_pos[1])) # Draw game map
+						DrawGUI(ui_list) # Draw GUI
+						DrawPlayer(players,arrow_pos,arrow_dir,offset)
+
+						player_cur.Transport(JAIL_POS)
+						player_cur.freeze_turn = 2
+						print('player' + str(player_cur.player_num) + ' is arrested!')
+						pygame.display.update()
+						GAMECLOCK.tick(2)
+
+					elif location.func == FUNCTION['estate']:
+						# Redraw game window
+						window.fill((0,0,0))
+						window.blit(UI_IMAGES['dice' + str(step)],(1200,725))
+						window.blit(map_surface,(map_pos[0],map_pos[1])) # Draw game map
+						DrawGUI(ui_list) # Draw GUI
+						DrawPlayer(players,arrow_pos,arrow_dir,offset)
+						pygame.display.update()
+
+						if (location.owner == -1) and (player_cur.money >= location.cost):
+							purchase = input('Do you want to purchase this place? (y/n)')
+							if purchase == 'y':
+								player_cur.money -= location.cost
+								location.owner = player_cur.player_num
+								location.buildings += 1
+								print('player' + str(player_cur.player_num) + ' has: ' + str(player_cur.money))
+
+						elif (location.owner > 0) and (location.owner != player_cur.player_num):
+							if location.tolls > player_cur.money:
+								print('player' + str(player_cur.player_num) + ' is broken!')
+								terminate()
+
+							tolls = location.tolls
+							player_cur.money -= tolls
+							players[location.owner - 1].money += tolls
+							print('player' + str(player_cur.player_num) + ' pays ' + str(tolls) + ' dollars to player' + str(location.owner))
+							print('player' + str(player_cur.player_num) + ' has: ' + str(player_cur.money))
+							print('player' + str(location.owner) + ' has: ' + str(players[location.owner - 1].money))
+
+						elif (location.owner == player_cur.player_num) and (player_cur.money >= location.extend_cost) and (location.buildings < 4):
+							purchase = input('Do you want to build extend building at this place? (y/n)')
+							if purchase == 'y':
+								player_cur.money -= location.extend_cost
+								location.buildings += 1
+								location.tolls *= location.buildings
+								print('player' + str(player_cur.player_num) + ' has: ' + str(player_cur.money))
+
 			elif event.type == QUIT:
 				terminate()
 
@@ -226,6 +292,7 @@ def DrawGUI(ui_list):
 	for ui in ui_list:
 		ui.render(window)
 	return
+
 
 def DrawPlayer(player_list,arrow_pos,arrow_dir,offset):
 	for player in player_list:
