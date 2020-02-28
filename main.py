@@ -3,7 +3,8 @@ import random
 import pygame
 from pygame.locals import *
 from game_class import *
-import ctypes
+import easygui
+import matplotlib.pyplot as plt
 
 FPS = 60 # frame rate for updating game window
 GAMECLOCK = pygame.time.Clock()
@@ -22,6 +23,8 @@ pygame.init()
 window = pygame.display.set_mode((WINDOWWIDTH,WINDOWHEIGHT))
 pygame.display.set_caption(GAMETITLE)
 font_obj = pygame.font.Font('GenYoGothicTW-Regular.ttf', 20)
+INITMONEY = 15000 # Money that each player gets when game starts
+BONUS = 2000 # Money player earns while passing start
 JAIL_POS = 2
 BUILDLIMIT = 4
 
@@ -92,16 +95,9 @@ DIRECT = {
 MESSAGE_BOX_TYPE = {
 	'OK' : 0,
 	'OK|CANCEL' : 1,
-	'YES|NO|CANCEL' : 3,
-	'YES|NO' : 4
+	'YES|NO' : 2
 }
 
-ANSWER = {
-	'OK' : 1,
-	'Cancel' : 2,
-	'YES' : 6,
-	'NO' : 7
-}
 
 def main():
 	map_surface, map_pos, game_map, building_pos, arrow_pos, arrow_dir = SetGameMap(HBOXNUM,VBOXNUM) # Setup game map
@@ -139,10 +135,14 @@ def main():
 	step = 1 # Initial dice point
 
 	players = []
-	players.append(Player(1))
-	players.append(Player(2))
+	players.append(Player(1,INITMONEY))
+	players.append(Player(2,INITMONEY))
 	player_turn = 1
 	PLAYERNUM = len(players)
+
+	game_record = [] # Used for recording each player's money in each turn
+	for i in range(PLAYERNUM):
+		game_record.append([])
 
 	offset = []
 	for i in range(PLAYERNUM):
@@ -158,7 +158,6 @@ def main():
 	# Game loop
 	##################################################################################################################################################################################
 
-	print(building_pos)
 	while True:
 		window.fill((0,0,0))
 		pygame.draw.rect(window,WHITE,blank_pos,0)
@@ -177,8 +176,9 @@ def main():
 				if go_btn.isHover():
 					player_cur = players[player_turn - 1]
 					player_turn += 1
-					if player_turn == len(players): player_turn = 0
-
+					if player_turn == len(players):
+						player_turn = 0
+						RecordData(players,game_record)
 
 					# Judge if player is in jail
 					player_cur.freeze_turn -= 1
@@ -187,7 +187,9 @@ def main():
 						continue
 
 					step = random.randint(1,6)
-					player_cur.Move(step,BOXNUM)
+					pass_start = player_cur.Move(step,BOXNUM,BONUS)
+					if pass_start is True:
+						CreateMessageBox('Player' + str(player_cur.player_num) + ' pass start and get ' + str(BONUS) + ' dollars!','Bonus!',MESSAGE_BOX_TYPE['OK'])
 					
 					# Execute loaction effect
 					location = location_list[player_cur.pos]
@@ -225,7 +227,7 @@ def main():
 
 						if (location.owner == -1) and (player_cur.money >= location.cost):
 							ans = CreateMessageBox('Do you want to purchase this place? (cost ' + str(location.cost) + ' dollars)','Purchase Chance!',MESSAGE_BOX_TYPE['YES|NO'])
-							if ans == ANSWER['YES']:
+							if ans is True:
 								player_cur.money -= location.cost
 								location.owner = player_cur.player_num
 								location.buildings += 1
@@ -233,8 +235,11 @@ def main():
 
 						elif (location.owner > 0) and (location.owner != player_cur.player_num) and (players[location.owner - 1].freeze_turn <= 0):
 							if location.tolls > player_cur.money:
-								CreateMessageBox('Player' + str(player_cur.player_num) + ' goes bankrupt!','Bankrupt!',MESSAGE_BOX_TYPE['OK'])
-								terminate()
+								CreateMessageBox('Player' + str(player_cur.player_num) + ' needs to pay ' + str(location.tolls) + ' dollors.\nPlayer' + str(player_cur.player_num) + ' goes bankrupt!','Bankrupt!',MESSAGE_BOX_TYPE['OK'])
+								players[location.owner - 1].money += player_cur.money
+								player_cur.money = 0
+								RecordData(players,game_record)
+								GameOver(game_record)
 
 							tolls = location.tolls
 							player_cur.money -= tolls
@@ -245,7 +250,7 @@ def main():
 
 						elif (location.owner == player_cur.player_num) and (player_cur.money >= location.extend_cost) and (location.buildings < BUILDLIMIT):
 							ans = CreateMessageBox('Do you want to build extend building at this place? (cost ' + str(location.extend_cost) + ' dollars)','Extend Chance!',MESSAGE_BOX_TYPE['YES|NO'])
-							if ans == ANSWER['YES']:
+							if ans is True:
 								player_cur.money -= location.extend_cost
 								location.buildings += 1
 								location.tolls *= location.buildings
@@ -367,7 +372,29 @@ def DrawPlayerData(players):
 
 
 def CreateMessageBox(message,title,style):
-	return ctypes.windll.user32.MessageBoxW(0,message,title,0x40000|style)
+	if style == MESSAGE_BOX_TYPE['OK']:
+		return easygui.msgbox(message,title)
+	elif style == MESSAGE_BOX_TYPE['OK|CANCEL']:
+		return easygui.ccbox(message,title)
+	elif style == MESSAGE_BOX_TYPE['YES|NO']:
+		return easygui.ynbox(message,title)
+
+
+def RecordData(players,game_record):
+	for player in players:
+		game_record[player.player_num - 1].append(player.money)
+	return
+
+
+def GameOver(game_record):
+	index = list(range(1,len(game_record[0]) + 1))
+	player_num = 1
+	for player_data in game_record:
+		plt.plot(index,player_data,label = 'Player' + str(player_num))
+		player_num += 1
+	plt.legend()
+	plt.show()
+	terminate()
 
 
 def terminate():

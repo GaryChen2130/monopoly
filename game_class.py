@@ -23,10 +23,10 @@ class Button:
 
 
 class Player:
-	def __init__(self,num):
+	def __init__(self,num,money):
 		self.player_num = num
 		self.asset = []
-		self.money = 15000
+		self.money = money
 		self.pos = 0
 		self.freeze_turn = 0
 
@@ -34,13 +34,14 @@ class Player:
 		window.blit(image,pos)
 		return
 
-	def Move(self,step,limit):
+	def Move(self,step,limit,bonus):
 		self.pos += step
+		flag = False
 		while self.pos >= limit:
-			self.money += 3000
-			print('player' + str(self.player_num) + ' gets 3000 dollars! total money: ' + str(self.money))
+			self.money += bonus
 			self.pos -= limit
-		return
+			flag = True
+		return flag
 
 	def Transport(self,pos):
 		self.pos = pos
