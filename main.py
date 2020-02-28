@@ -3,6 +3,7 @@ import random
 import pygame
 from pygame.locals import *
 from game_class import *
+import ctypes
 
 FPS = 60 # frame rate for updating game window
 GAMECLOCK = pygame.time.Clock()
@@ -88,6 +89,19 @@ DIRECT = {
 	'_down' : 3
 }
 
+MESSAGE_BOX_TYPE = {
+	'OK' : 0,
+	'OK|CANCEL' : 1,
+	'YES|NO|CANCEL' : 3,
+	'YES|NO' : 4
+}
+
+ANSWER = {
+	'OK' : 1,
+	'Cancel' : 2,
+	'YES' : 6,
+	'NO' : 7
+}
 
 def main():
 	map_surface, map_pos, game_map, building_pos, arrow_pos, arrow_dir = SetGameMap(HBOXNUM,VBOXNUM) # Setup game map
@@ -154,6 +168,7 @@ def main():
 		DrawGUI(ui_list) # Draw GUI
 		DrawPlayer(players,arrow_pos,arrow_dir,offset)
 		DrawBuildings(location_list,building_pos,building_offset,arrow_dir)
+		DrawPlayerData(players)
 
 		for event in pygame.event.get():
 
@@ -164,10 +179,11 @@ def main():
 					player_turn += 1
 					if player_turn == len(players): player_turn = 0
 
+
 					# Judge if player is in jail
+					player_cur.freeze_turn -= 1
 					if player_cur.freeze_turn > 0:
-						player_cur.freeze_turn -= 1
-						print('player' + str(player_cur.player_num) + ' is in jail!')
+						CreateMessageBox('Player' + str(player_cur.player_num) + ' is in jail!','Jail!',MESSAGE_BOX_TYPE['OK'])
 						continue
 
 					step = random.randint(1,6)
@@ -186,11 +202,13 @@ def main():
 						DrawGUI(ui_list) # Draw GUI
 						DrawPlayer(players,arrow_pos,arrow_dir,offset)
 						DrawBuildings(location_list,building_pos,building_offset,arrow_dir)
+						DrawPlayerData(players)
+						pygame.display.update()
 
 						player_cur.Transport(JAIL_POS)
-						player_cur.freeze_turn = 2
-						print('player' + str(player_cur.player_num) + ' is arrested!')
-						pygame.display.update()
+						player_cur.freeze_turn = 3
+						#print('player' + str(player_cur.player_num) + ' is arrested!')
+						CreateMessageBox('Player' + str(player_cur.player_num) + ' is arrested!','Go Into Jail!',MESSAGE_BOX_TYPE['OK'])
 						GAMECLOCK.tick(2)
 
 					elif location.func == FUNCTION['estate']:
@@ -202,31 +220,32 @@ def main():
 						DrawGUI(ui_list) # Draw GUI
 						DrawPlayer(players,arrow_pos,arrow_dir,offset)
 						DrawBuildings(location_list,building_pos,building_offset,arrow_dir)
+						DrawPlayerData(players)
 						pygame.display.update()
 
 						if (location.owner == -1) and (player_cur.money >= location.cost):
-							purchase = input('Do you want to purchase this place? (y/n)')
-							if purchase == 'y':
+							ans = CreateMessageBox('Do you want to purchase this place? (cost ' + str(location.cost) + ' dollars)','Purchase Chance!',MESSAGE_BOX_TYPE['YES|NO'])
+							if ans == ANSWER['YES']:
 								player_cur.money -= location.cost
 								location.owner = player_cur.player_num
 								location.buildings += 1
 								print('player' + str(player_cur.player_num) + ' has: ' + str(player_cur.money))
 
-						elif (location.owner > 0) and (location.owner != player_cur.player_num) and (players[location.owner - 1].freeze_turn == 0):
+						elif (location.owner > 0) and (location.owner != player_cur.player_num) and (players[location.owner - 1].freeze_turn <= 0):
 							if location.tolls > player_cur.money:
-								print('player' + str(player_cur.player_num) + ' goes bankrupt!')
+								CreateMessageBox('Player' + str(player_cur.player_num) + ' goes bankrupt!','Bankrupt!',MESSAGE_BOX_TYPE['OK'])
 								terminate()
 
 							tolls = location.tolls
 							player_cur.money -= tolls
 							players[location.owner - 1].money += tolls
-							print('player' + str(player_cur.player_num) + ' pays ' + str(tolls) + ' dollars to player' + str(location.owner))
+							CreateMessageBox('Player' + str(player_cur.player_num) + ' pays ' + str(tolls) + ' dollars to player' + str(location.owner),'Pay tolls!',MESSAGE_BOX_TYPE['OK'])
 							print('player' + str(player_cur.player_num) + ' has: ' + str(player_cur.money))
 							print('player' + str(location.owner) + ' has: ' + str(players[location.owner - 1].money))
 
 						elif (location.owner == player_cur.player_num) and (player_cur.money >= location.extend_cost) and (location.buildings < BUILDLIMIT):
-							purchase = input('Do you want to build extend building at this place? (y/n)')
-							if purchase == 'y':
+							ans = CreateMessageBox('Do you want to build extend building at this place? (cost ' + str(location.extend_cost) + ' dollars)','Extend Chance!',MESSAGE_BOX_TYPE['YES|NO'])
+							if ans == ANSWER['YES']:
 								player_cur.money -= location.extend_cost
 								location.buildings += 1
 								location.tolls *= location.buildings
@@ -335,6 +354,20 @@ def DrawBuildings(location_list,building_pos,building_offset,arrow_dir):
 			pos_x = building_pos[location.num][0] + building_offset[i][DIRECT[arrow_dir[location.num]]][0]
 			pos_y = building_pos[location.num][1] + building_offset[i][DIRECT[arrow_dir[location.num]]][1]
 			window.blit(UI_IMAGES['building' + str(location.owner)],(pos_x,pos_y))
+
+def DrawPlayerData(players):
+	data_offset = 50
+	for player in players:
+		text = font_obj.render('player' + str(player.player_num) + ': ' + str(player.money),True,WHITE,(0,0,0,0))
+		text_rect = text.get_rect()
+		text_rect.center = (100,data_offset)
+		window.blit(text,text_rect)
+		data_offset += 50
+	return
+
+
+def CreateMessageBox(message,title,style):
+	return ctypes.windll.user32.MessageBoxW(0,message,title,0x40000|style)
 
 
 def terminate():
