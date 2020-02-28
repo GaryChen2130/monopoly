@@ -48,7 +48,8 @@ class Player:
 
 
 class Location:
-	def __init__(self,image,pos,func,cost,extend_cost,tolls):
+	def __init__(self,num,image,pos,func,cost,extend_cost,tolls):
+		self.num = num
 		self.image = image
 		self.pos = pos
 		self.func = func
